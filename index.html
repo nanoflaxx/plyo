@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1D9E75">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nano-Gym">
+<meta name="description" content="Push/Pull gym schedule with logging, muscle recovery tracking and exercise tutorials">
+<link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="/gym/icons/icon-192.png">
+<title>Nano-Gym 🤦</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #1D9E75;
+  --brand-light: #E1F5EE;
+  --brand-dark: #085041;
+  --push: #378ADD;
+  --push-light: #E6F1FB;
+  --pull: #D85A30;
+  --pull-light: #FAECE7;
+  --rest: #888780;
+  --rest-light: #F1EFE8;
+  --warn: #BA7517;
+  --warn-light: #FAEEDA;
+  --danger: #D32F2F;
+  --danger-light: #FFEBEE;
+  --bg: #ffffff;
+  --bg-secondary: #f5f5f3;
+  --bg-tertiary: #efefec;
+  --text: #1a1a1a;
+  --text-secondary: #6b6b6b;
+  --text-tertiary: #999;
+  --border: rgba(0,0,0,0.12);
+  --border-med: rgba(0,0,0,0.2);
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a1a;
+    --bg-secondary: #242424;
+    --bg-tertiary: #2e2e2e;
+    --text: #f0f0f0;
+    --text-secondary: #a0a0a0;
+    --text-tertiary: #666;
+    --border: rgba(255,255,255,0.1);
+    --border-med: rgba(255,255,255,0.2);
+    --brand-light: rgba(29,158,117,0.15);
+    --push-light: rgba(55,138,221,0.15);
+    --pull-light: rgba(216,90,48,0.15);
+    --rest-light: rgba(136,135,128,0.15);
+    --warn-light: rgba(186,117,23,0.15);
+    --danger-light: rgba(211,47,47,0.15);
+    --brand-dark: #5DCAA5;
+    --push: #85B7EB;
+    --pull: #F0997B;
+    --rest: #B4B2A9;
+  }
+}
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg-tertiary);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-shell { max-width: 100%; width: 100vw; margin: 0; background: var(--bg-tertiary); min-height: 100vh; }
+
+@media (min-width: 769px) {
+  .app-shell { max-width: 680px; width: 680px; margin: 0 auto; }
+}
+
+.header {
+  background: var(--bg);
+  border-bottom: 0.5px solid var(--border);
+  padding: 1rem 1.25rem 0.75rem;
+  padding-top: calc(1rem + env(safe-area-inset-top));
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem; }
+.header h1 { font-size: 20px; font-weight: 600; flex: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.2s; }
+.header h1:hover { background: var(--bg-secondary); }
+.header-sub { font-size: 13px; color: var(--text-secondary); }
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 680px;
+  background: var(--bg);
+  border-top: 0.5px solid var(--border);
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+}
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+}
+.nav-btn .nav-icon { font-size: 22px; line-height: 1; }
+.nav-btn.active { color: var(--brand); }
+.nav-btn:hover { color: var(--text); }
+
+.content { padding: 1rem; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+.section { display: none; }
+.section.active { display: block; }
+
+.card {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.card-title { font-size: 15px; font-weight: 600; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 8px; }
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-push { background: var(--push-light); color: var(--push); }
+.badge-pull { background: var(--pull-light); color: var(--pull); }
+.badge-cardio { background: #FFE1B6; color: #F57C00; }
+.badge-rest { background: var(--rest-light); color: var(--rest); }
+.badge-warm { background: var(--brand-light); color: var(--brand); }
+
+.week-strip {
+  display: block;
+  gap: 4px;
+  margin-bottom: 0.75rem;
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem;
+  border: 0.5px solid var(--border);
+  overflow: hidden;
+}
+.wday { text-align: center; }
+.wday-lbl { font-size: 10px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 500; }
+.wday-dot {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; margin: 0 auto;
+  border: 1.5px solid transparent;
+}
+.wday-dot.push { background: var(--push-light); color: var(--push); border-color: var(--push); }
+.wday-dot.pull { background: var(--pull-light); color: var(--pull); border-color: var(--pull); }
+.wday-dot.cardio { background: #FFE1B6; color: #F57C00; border-color: #F57C00; }
+.wday-dot.rest { background: var(--rest-light); color: var(--rest); }
+.wday-dot.today { outline: 2.5px solid var(--brand); outline-offset: 2px; }
+
+.day-card {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.day-hdr {
+  padding: 0.875rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.day-name {
+  flex: 1;  /* ← ADD THIS */
+}
+
+.day-hdr button {
+  flex-shrink: 0;  /* ← ADD THIS */
+}
+.day-hdr:active { background: var(--bg-secondary); }
+.day-name { font-weight: 600; font-size: 15px; flex: 1; }
+.day-duration { font-size: 12px; color: var(--text-secondary); }
+.chevron { font-size: 11px; color: var(--text-secondary); transition: transform 0.2s; }
+.collapsed .chevron { transform: rotate(-90deg); }
+.collapsed .day-body { display: none; }
+
+.ex-row {
+  padding: 0.875rem 1rem;
+  border-top: 0.5px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ex-thumb {
+  width: 58px; height: 58px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border: 0.5px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  font-size: 26px;
+}
+.ex-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ex-thumb img.hidden { display: none; }
+.ex-info { flex: 1; min-width: 0; }
+.ex-name { font-weight: 600; font-size: 14px; line-height: 1.3; }
+.ex-meta { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+.ex-muscles { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; text-transform: capitalize; }
+.ex-btns { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.ex-btn {
+  font-size: 12px; padding: 4px 12px;
+  border: 0.5px solid var(--border-med);
+  border-radius: 20px; background: transparent;
+  color: var(--text-secondary); cursor: pointer;
+  transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+}
+.ex-btn:active { background: var(--bg-secondary); }
+
+.setting-row {
+  padding: 0.875rem 0;
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-lbl { flex: 1; font-weight: 500; }
+.setting-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0.75rem;
+}
+.form-label { font-size: 13px; font-weight: 600; white-space: nowrap; min-width: 80px; }
+.form-input, .form-select {
+  flex: 1;
+  padding: 8px 10px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+}
+.form-input:focus, .form-select:focus { outline: none; border-color: var(--brand); }
+
+.btn-primary, .btn-secondary, .btn-danger {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s;
+}
+.btn-primary { background: var(--brand); color: white; }
+.btn-primary:active { opacity: 0.8; }
+.btn-secondary { background: var(--bg-secondary); color: var(--text); border: 0.5px solid var(--border); }
+.btn-secondary:active { background: var(--bg-tertiary); }
+.btn-danger { background: var(--danger-light); color: var(--danger); }
+.btn-danger:active { opacity: 0.8; }
+
+.bw-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  background: var(--brand-light);
+  color: var(--brand);
+  border-radius: 20px;
+  font-size: 12px;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+.notif-banner {
+  background: var(--brand-light);
+  border-left: 3px solid var(--brand);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.warn-box {
+  background: var(--warn-light);
+  border-left: 3px solid var(--warn);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+  color: var(--warn);
+}
+
+.metric-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+.metric {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  text-align: center;
+}
+.metric-val { font-size: 24px; font-weight: 700; color: var(--brand); }
+.metric-lbl { font-size: 11px; color: var(--text-secondary); margin-top: 6px; font-weight: 500; }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: flex-end;
+  z-index: 100;
+}
+.modal {
+  background: var(--bg);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 0;
+  width: 100%; max-width: 680px;
+  max-height: 88vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.modal-handle {
+  width: 36px; height: 4px;
+  background: var(--border-med);
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+.modal-hdr {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 0.5px solid var(--border);
+  position: sticky; top: 0; background: var(--bg); z-index: 1;
+}
+.modal-title { font-size: 16px; font-weight: 600; flex: 1; }
+.modal-close {
+  background: var(--bg-secondary); border: none;
+  width: 30px; height: 30px; border-radius: 50%;
+  font-size: 16px; cursor: pointer; color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-body { padding: 1rem 1.25rem 2rem; }
+.gif-container {
+  width: 100%; height: 200px; border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; margin-bottom: 1rem;
+  font-size: 56px;
+}
+.gif-container img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-lg); }
+.modal-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.7; }
+.modal-steps-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.modal-steps { padding-left: 1.2rem; }
+.modal-steps li { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.6; }
+.modal-alts { margin-top: 1.25rem; }
+.modal-alts-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+.alt-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border: 0.5px solid var(--border);
+  border-radius: var(--radius-md); margin-bottom: 6px;
+  cursor: pointer;
+}
+.alt-chip:active { background: var(--bg-secondary); }
+.alt-chip-name { font-weight: 600; font-size: 14px; flex: 1; }
+.alt-chip-meta { font-size: 11px; }
+.int-lower { color: var(--brand); font-weight: 600; }
+.int-same { color: var(--push); font-weight: 600; }
+.int-higher { color: var(--pull); font-weight: 600; }
+
+.export-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 0.75rem; }
+
+.install-banner {
+  background: linear-gradient(135deg, #E1F5EE, #B5D4F4);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  display: flex; align-items: center; gap: 12px;
+}
+.install-text { flex: 1; font-size: 13px; }
+.install-text strong { font-size: 14px; display: block; margin-bottom: 3px; }
+
+.api-credit { font-size: 11px; color: var(--text-tertiary); margin-top: 6px; }
+.api-credit a { color: var(--brand); text-decoration: none; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.day-card { animation: fadeIn 0.2s ease both; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-med); border-radius: 2px; }
+
+.muscle-list { display: flex; flex-direction: column; gap: 8px; }
+
+.days-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.day-selector {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.day-selector.active {
+  border-color: var(--brand);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-weight: 600;
+}
+/* ── CHARTS ───────────────────────────────────────── */
+canvas {
+  display: block;
+  width: 100% !important;
+}
+.chart-point {
+  cursor: pointer;
+}
+.chart-tooltip {
+  position: absolute;
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 20;
+}
+.pr-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+.chart-legend {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+}
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  html { font-size: 14px; }
+  .content { padding: 10px; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  .card { margin-bottom: 10px; }
+  .modal { max-width: 100%; }
+}
+@media (max-width: 480px) {
+  html { font-size: 15px; }
+  body { font-size: 14px; }
+  
+  .app-shell {
+    max-width: 100%;
+    padding: 0;
+    min-height: 100vh;
+  }
+  
+  .header {
+    padding: 12px 12px;
+    gap: 8px;
+  }
+  
+  .header h1 {
+    font-size: 18px;
+  }
+  
+  .card {
+    margin: 0 12px 12px 12px;
+    border-radius: 8px;
+  }
+  
+  .card-title {
+    font-size: 14px;
+  }
+  
+  .ex-thumb {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+  }
+  
+  .ex-name {
+    font-size: 13px;
+  }
+  
+  .ex-meta {
+    font-size: 11px;
+  }
+  
+  .btn-primary, .btn-secondary, .ex-btn {
+    font-size: 12px;
+    padding: 8px 12px;
+    min-height: 44px;
+  }
+  
+  .nav-btn {
+    font-size: 11px;
+  }
+  
+  .nav-icon {
+    font-size: 20px;
+  }
+  input[type="number"],
+  input[type="text"],
+  select { font-size: 16px !important; }
+  .form-row {
+  gap: 6px;
+}
+.form-label {
+  min-width: 60px;
+}
+#bw-input {
+  min-width: 0;
+  width: 100%;
+}
+/* Card alignment — prevent edge bleed */
+.metric-row {
+  margin: 0 12px 12px 12px;
+}
+.warn-box {
+  margin: 0 12px 12px 12px;
+}
+.notif-banner {
+  margin: 0 12px 12px 12px;
+}
+.export-row {          /* ✅ ADD THIS */
+  margin: 0 12px;
+}
+}
+/* Hide scrollbar on week strip day container */
+.week-strip div::-webkit-scrollbar {
+  height: 3px;
+}
+.week-strip div::-webkit-scrollbar-track {
+  background: var(--border);
+  border-radius: 2px;
+}
+.week-strip div::-webkit-scrollbar-thumb {
+  background: var(--brand);
+  border-radius: 2px;
+}
+
+/* Bonus Exercise Buttons */
+.bonus-btn {
+  transition: all 0.2s ease;
+  border: 1.5px solid var(--border) !important;
+}
+
+.bonus-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bonus-btn-active {
+  background: linear-gradient(135deg, var(--brand-light) 0%, var(--bg)) !important;
+  border-color: var(--brand) !important;
+  opacity: 1 !important;
+  box-shadow: 0 0 12px rgba(29, 158, 117, 0.2);
+}
+
+.bonus-btn-active:hover {
+  box-shadow: 0 0 16px rgba(29, 158, 117, 0.3);
+}
+
+@media (max-width: 480px) {
+  .bonus-btn {
+    min-height: 90px;
+    padding: 12px;
+  }
+}
+.ex-row.logged-exercise { opacity: 0.7; }
+.ex-row.logged-exercise .ex-meta { display: none !important; }
+.ex-row.logged-exercise .ex-btns { display: none !important; }
+.ex-row.logged-exercise.expanded-logged .ex-meta { display: block !important; }
+.ex-row.logged-exercise.expanded-logged .ex-btns { display: flex !important; }
+
+/* ── AUTH MODAL STYLES ── */
+#auth-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.auth-modal-overlay {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.auth-modal-container {
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.5rem;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+}
+
+.auth-modal-container h2 { 
+  margin: 0;
+  font-size: 26px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 0.75rem;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.auth-tab-btn:hover {
+  color: var(--text);
+}
+
+.auth-tab-btn.active {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-form input {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: var(--brand);
+  background: var(--bg);
+  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.1);
+}
+
+.auth-form button {
+  padding: 0.85rem;
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.25rem;
+}
+
+.auth-form button:hover {
+  background: var(--brand-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(29, 158, 117, 0.3);
+}
+
+.auth-form button:active {
+  transform: translateY(0);
+}
+
+</style>
+</head>
+<body>
+<!-- AUTH MODAL -->
+<div id="auth-modal" style="display:none;">
+  <div class="auth-modal-overlay">
+    <div class="auth-modal-container">
+      <div style="text-align:center;margin-bottom:1.5rem;">
+        <h2 style="font-size:28px;margin:0;color:var(--brand);">💪 Nano-Gym</h2>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:0.5rem;">Strength + Plyo Split</p>
+      </div>
+      
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button id="auth-tab-login" class="auth-tab-btn active" onclick="switchAuthTab('login')">Login</button>
+        <button id="auth-tab-register" class="auth-tab-btn" onclick="switchAuthTab('register')">Register</button>
+      </div>
+      
+      <!-- Login Form -->
+      <form id="auth-form-login" class="auth-form" onsubmit="event.preventDefault();handleLogin();">
+        <input id="auth-login-user" type="text" placeholder="Username" required />
+        <input id="auth-login-pass" type="password" placeholder="Password" required />
+        <button type="submit">Login</button>
+      </form>
+      
+      <!-- Register Form (hidden) -->
+      <form id="auth-form-register" class="auth-form" style="display:none;" onsubmit="event.preventDefault();handleRegister();">
+        <input id="auth-register-user" type="text" placeholder="Username" required />
+        <input id="auth-register-pass" type="password" placeholder="Password (min 4)" required />
+        <input id="auth-register-pass2" type="password" placeholder="Confirm Password" required />
+        <button type="submit">Create Account</button>
+      </form>
+      
+      <p style="text-align:center;font-size:11px;color:var(--text-tertiary);margin-top:1rem;">
+        🔒 Data stored locally on your device only
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="app-shell">
+  <div class="header">
+    <div class="header-top">
+      <div style="font-size:24px">🤦</div>
+      <h1 id="user-header" onclick="editUserName()">Nano-Gym</h1>
+      <div id="today-badge"></div>
+      <button id="logout-btn" onclick="handleLogout()" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:12px;padding:4px 8px;border-radius:4px;transition:all 0.2s;hover{color:var(--brand);}">Logout</button>
+    </div>
+    <div class="header-sub" id="greeting"></div>
+  </div>
+
+  <div class="content">
+    <!-- SCHEDULE -->
+    <div id="tab-schedule" class="section active">
+      <div id="install-prompt"></div>
+      <div id="download-progress" style="display:none"></div>
+      <div id="notif-bar" style="display:none" class="notif-banner">
+        🔔 Notifications enabled! You'll get a reminder the evening before each workout.
+      </div>
+      <div class="week-strip" id="week-strip"></div>
+      <div id="schedule-days"></div>
+      
+      <!-- DISABLED: Bonus Exercises
+      <div class="card" style="margin-top: 1.5rem">
+        <div class="card-title">🎯 Bonus Exercises</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; padding: 8px; background: var(--bg-secondary); border-radius: 6px">
+          Customize your workouts. Tap to toggle bonus exercises.
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0">
+          <button id="opt-abs-btn" class="bonus-btn" onclick="toggleWorkoutOption('moreAbs')" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer; gap: 6px; min-height: 100px; transition: all 0.2s; opacity: 0.5">
+            <span style="font-size: 32px">🔥</span>
+            <span class="bonus-status" style="font-size: 11px; font-weight: 600; color: var(--text-secondary)">OFF</span>
+            <span style="font-size: 10px; color: var(--text-secondary)">More Abs</span>
+          </button>
+          
+          <button id="opt-glutes-btn" class="bonus-btn" onclick="toggleWorkoutOption('moreGlutes')" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer; gap: 6px; min-height: 100px; transition: all 0.2s; opacity: 0.5">
+            <span style="font-size: 32px">🍑</span>
+            <span class="bonus-status" style="font-size: 11px; font-weight: 600; color: var(--text-secondary)">OFF</span>
+            <span style="font-size: 10px; color: var(--text-secondary)">More Glutes</span>
+          </button>
+          
+          <button id="opt-calisthenics-btn" class="bonus-btn" onclick="toggleWorkoutOption('moreCalisthenics')" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer; gap: 6px; min-height: 100px; transition: all 0.2s; opacity: 0.5">
+            <span style="font-size: 32px">🤸</span>
+            <span class="bonus-status" style="font-size: 11px; font-weight: 600; color: var(--text-secondary)">OFF</span>
+            <span style="font-size: 10px; color: var(--text-secondary)">Bodyweight</span>
+          </button>
+          
+          <button id="opt-cardio-btn" class="bonus-btn" onclick="toggleWorkoutOption('moreCardio')" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer; gap: 6px; min-height: 100px; transition: all 0.2s; opacity: 0.5">
+            <span style="font-size: 32px">🏃</span>
+            <span class="bonus-status" style="font-size: 11px; font-weight: 600; color: var(--text-secondary)">OFF</span>
+            <span style="font-size: 10px; color: var(--text-secondary)">More Cardio</span>
+          </button>
+          
+          <button id="opt-mobility-btn" class="bonus-btn" onclick="toggleWorkoutOption('moreMobility')" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer; gap: 6px; min-height: 100px; transition: all 0.2s; opacity: 0.5">
+            <span style="font-size: 32px">🔄</span>
+            <span class="bonus-status" style="font-size: 11px; font-weight: 600; color: var(--text-secondary)">OFF</span>
+            <span style="font-size: 10px; color: var(--text-secondary)">Mobility</span>
+          </button>
+          
+          <button id="opt-legs-btn" class="bonus-btn" onclick="toggleWorkoutOption('moreLegs')" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer; gap: 6px; min-height: 100px; transition: all 0.2s; opacity: 0.5">
+            <span style="font-size: 32px">🦵</span>
+            <span class="bonus-status" style="font-size: 11px; font-weight: 600; color: var(--text-secondary)">OFF</span>
+            <span style="font-size: 10px; color: var(--text-secondary)">More Legs</span>
+          </button>
+        </div>
+      </div>
+      -->
+    </div>
+
+    <!-- LOG -->
+    <div id="tab-log" class="section">
+      <div class="card">
+        <div class="card-title">⚖️ Body weight</div>
+        <div class="form-row">
+          <span class="form-label">Weight</span>
+          <input type="number" class="form-input" id="bw-input" placeholder="75" step="0.1" inputmode="decimal">
+          <span class="form-label" style="min-width:30px" id="bw-unit-lbl">kg</span>
+          <button class="btn-primary" onclick="logBW()">Log</button>
+        </div>
+        <div class="bw-pills" id="bw-history"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Workout log</div>
+        <div id="log-entries">
+          <p style="color:var(--text-secondary);font-size:13px">No workouts logged yet.<br>Tap 📝 on any exercise to get started! 💪</p>
+        </div>
+      </div>
+      <div class="export-row">
+        <button class="btn-primary" onclick="exportLog()">⬇️ Export log</button>
+        <button class="btn-danger" onclick="clearLog()">🗑️ Clear all</button>
+      </div>
+    </div>
+
+    <!-- MUSCLES / INJURIES -->
+    <div id="tab-muscles" class="section">
+      <div id="injury-warning"></div>
+      <div class="card">
+        <div class="card-title">🏥 Injury tracker</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:0.875rem">Track injuries to get safer exercise recommendations.</p>
+        <button class="btn-primary" onclick="showInjuryModal()" style="width:100%">Manage Injuries</button>
+      </div>
+      <div class="card">
+        <div class="card-title">🦾 Muscle recovery</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:0.875rem">Based on your logged workouts. Wait at least 48h before training the same muscle group again.</p>
+        <div class="muscle-list" id="muscle-status"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="tab-settings" class="section">
+      <div class="card">
+  <div class="card-title">👤 Profile</div>
+  <div class="setting-row">
+    <div class="setting-lbl">
+      Name
+      <div class="setting-sub">Personalized greeting</div>
+    </div>
+    <button class="btn-secondary" onclick="editUserName()" style="white-space:nowrap">Edit ✏️</button>
+  </div>
+  
+  <div style="border-top: 0.5px solid var(--border); margin: 12px 0; padding-top: 12px;">
+    
+    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
+      Body stats used for calorie calculations
+      </div>
+    
+      <div class="setting-row">
+      <div class="setting-lbl">Age</div>
+      <input type="number" id="profile-age" class="form-select" style="width:60px" placeholder="25" min="15" max="100">
+      </div>
+    
+      <div class="setting-row">
+      <div class="setting-lbl">Weight</div>
+      <div style="display: flex; gap: 8px; flex: 1">
+        <input type="number" id="profile-weight" class="form-select" style="flex: 1" placeholder="75" step="0.5" min="30" max="300">
+        <select id="profile-unit" class="form-select" style="width: 60px" onchange="updateProfileUnit()">
+          <option value="kg">kg</option>
+          <option value="lbs">lbs</option>
+        </select>
+      </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-lbl">Height</div>
+        <div style="display: flex; gap: 8px; flex: 1">
+          <input type="number" id="profile-height" class="form-select" style="flex: 1" placeholder="180" step="1" min="100" max="250">
+          <select id="profile-height-unit" class="form-select" style="width: 60px">
+          <option value="cm">cm</option>
+          <option value="in">in</option>
+        </select>
+        </div>
+        </div>
+      <div class="setting-row">
+        <div class="setting-lbl">Gender</div>
+          <select id="profile-gender" class="form-select" style="width: auto; min-width: 100px">
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+          </select>
+        </div>
+          <button class="btn-primary" onclick="saveProfile()" style="width: 100%; margin-top: 12px">Save Profile</button>
+        </div>
+    </div>
+    <div class="card">
+  <div class="card-title">🎯 Workout Options</div>
+      <div class="card">
+        <div class="card-title">⚙️ Preferences</div>
+        <div class="setting-row">
+          <div class="setting-lbl">
+            Days per week
+            <div class="setting-sub">Choose your workout days</div>
+          </div>
+        </div>
+        <div style="margin: 0.75rem 0; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border)">
+          <div class="days-row" id="days-row"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-lbl">
+            Workout Routine
+            <div class="setting-sub">Choose a preset split</div>
+          </div>
+          <select class="form-select" id="routine-select" onchange="applyPresetRoutine(this.value)" style="width:auto;min-width:150px;">
+            <option value="split4day">4-Day Split (Strength+Plyo)</option>
+            <option value="pushpull">Push/Pull/Legs</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-lbl">
+            Weight unit
+          </div>
+          <select class="form-select" onchange="setUnit(this.value)" id="unit-sel" style="width:auto;min-width:100px">
+            <option value="kg">kg</option>
+            <option value="lbs">lbs</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-lbl">
+            Notifications
+            <div class="setting-sub">Evening reminder before workout days</div>
+          </div>
+          <button class="btn-secondary" id="notif-btn" onclick="reqNotif()">Enable 🔔</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-lbl">
+            Install as app
+            <div class="setting-sub">Add to iPhone Home Screen for offline use</div>
+          </div>
+          <button class="btn-secondary" id="install-btn" onclick="promptInstall()">Install 📲</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-lbl">Tutorial</div>
+          <button class="btn-secondary" onclick="showOnboarding()">View Tutorial 🎓</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-lbl">
+            Connectivity
+            <div class="setting-sub" id="connectivity-status">🟢 Online (ExerciseDB)</div>
+          </div>
+        </div>
+        <div style="margin: 0.75rem 0; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border)">
+          <button class="btn-secondary" id="offline-mode-btn" onclick="toggleOfflineMode()">Force Offline: OFF 🟢</button>
+        </div>
+      </div>
+      
+      <!-- PROGRESS TRACKER SECTION -->
+      <div class="card">
+        <div class="card-title">💪 Progress Tracker</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:1rem;padding:8px;background:var(--bg-secondary);border-radius:6px;">
+          Track your weight progress over time. Log exercises in the Log tab.
+        </div>
+        <div id="progress-panel">
+          <p style="color:var(--text-secondary);text-align:center;padding:1rem;">
+            Log exercises first to see progress →
+          </p>
+        </div>
+      </div>
+      
+      <div style="font-size:12px;color:var(--text-tertiary);text-align:center;margin-top:0.5rem">
+        Exercise images via <a href="https://wger.de" target="_blank" style="color:var(--brand)">wger.de</a> (free, open source) · No account needed
+      </div>
+    </div>
+    </div>
+        <!-- CHARTS -->
+    <div id="tab-charts" class="section">
+      <div class="metric-row" style="grid-template-columns:repeat(3,1fr)">
+        <div class="metric">
+          <div class="metric-val" id="stat-wk">W1</div>
+          <div class="metric-lbl">This week</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="stat-streak">0🔥</div>
+          <div class="metric-lbl">Day streak</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="chart-stat-workouts">0</div>
+          <div class="metric-lbl">Total workouts</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="chart-stat-volume">0</div>
+          <div class="metric-lbl">Total volume (kg)</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="chart-stat-exercises">0</div>
+          <div class="metric-lbl">Exercises tracked</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="chart-stat-streak">0🔥</div>
+          <div class="metric-lbl">Best streak</div>
+        </div>
+      </div>
+
+      <!-- Exercise selector -->
+      <div class="card">
+        <div class="card-title">📈 Strength Progress</div>
+        <div class="form-row" style="margin-bottom:0">
+          <span class="form-label">Exercise</span>
+          <select id="chart-ex-select" class="form-select" onchange="renderProgressChart()">
+            <option value="">Select exercise...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Progress chart -->
+      <div class="card" id="chart-card" style="display:none">
+        <div class="card-title" id="chart-title">Progress</div>
+        <canvas id="progress-chart" style="width:100%;height:220px"></canvas>
+        <div id="chart-stats-row" style="display:none;gap:8px;margin-top:1rem;flex-wrap:wrap"></div>
+      </div>
+
+      <!-- Body weight chart -->
+      <div class="card">
+        <div class="card-title">⚖️ Body Weight</div>
+        <canvas id="bw-chart" style="width:100%;height:180px"></canvas>
+        <div id="bw-chart-empty" style="color:var(--text-secondary);font-size:13px;display:none">
+          No body weight entries yet — log your weight in the Log tab!
+        </div>
+      </div>
+
+      <!-- Workout frequency -->
+      <div class="card">
+        <div class="card-title">📅 Workout Frequency</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem">
+          Workouts per week over the last 8 weeks
+        </p>
+        <canvas id="freq-chart" style="width:100%;height:160px"></canvas>
+        <div id="freq-chart-empty" style="color:var(--text-secondary);font-size:13px;display:none">
+          No workouts logged yet!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="showTab('schedule')" id="nav-schedule">
+      <span class="nav-icon">📅</span>Schedule
+    </button>
+    <button class="nav-btn" onclick="showTab('log')" id="nav-log">
+      <span class="nav-icon">📋</span>Log
+    </button>
+    <button class="nav-btn" onclick="showTab('charts')" id="nav-charts">
+      <span class="nav-icon">📈</span>Charts
+    </button>
+    <button class="nav-btn" onclick="showTab('muscles')" id="nav-muscles">
+      <span class="nav-icon">🏥</span>Muscles
+    </button>
+    <button class="nav-btn" onclick="showTab('settings')" id="nav-settings">
+      <span class="nav-icon">⚙️</span>Settings
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL -->
+<div id="modal" style="display:none" class="modal-overlay" onclick="closeModalOut(event)">
+  <div class="modal" id="modal-body">
+    <div class="modal-handle"></div>
+  </div>
+</div>
+<!-- ONBOARDING MODAL -->
+<div id="onboarding-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--bg);border-radius:var(--radius-lg);padding:2rem;max-width:500px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
+    <!-- Slide content -->
+    <div id="onboarding-content" style="text-align:center;min-height:300px;display:none;flex-direction:column;justify-content:center">
+      <div style="font-size:48px;margin-bottom:1rem" id="onboarding-emoji"></div>
+      <h2 style="margin:0.5rem 0;color:var(--text);font-size:24px" id="onboarding-title"></h2>
+      <p style="color:var(--text-secondary);font-size:14px;margin:0.5rem 0;font-weight:600" id="onboarding-subtitle"></p>
+      <p style="color:var(--text-secondary);font-size:14px;margin:1rem 0;line-height:1.6" id="onboarding-text"></p>
+    </div>
+
+    <!-- Slide counter -->
+    <div style="text-align:center;font-size:12px;color:var(--text-tertiary);margin:1.5rem 0">
+      <span id="onboarding-counter"></span>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:none;gap:8px;justify-content:center;margin-top:1.5rem">
+      <button onclick="onboardingAction('skip')" style="padding:10px 16px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:14px;color:var(--text-secondary)">Skip</button>
+      <button onclick="onboardingAction('back')" style="padding:10px 16px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:14px;color:var(--text-secondary)">← Back</button>
+      <button onclick="onboardingAction('next')" style="padding:10px 16px;background:var(--brand);border:none;border-radius:6px;cursor:pointer;font-size:14px;color:#fff">Next →</button>
+    </div>
+    <!-- Creators -->
+    <div style="text-align:right;margin-top:1rem;font-size:11px;color:var(--text-tertiary);line-height:1.5">
+      By <span style="font-weight:600">Nanoflaxx</span> &amp; <span style="font-weight:600">Claude</span>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:99999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:2rem;transition:opacity 0.4s ease">
+  <div style="font-size:56px">🤦</div>
+  <div style="font-size:20px;font-weight:700;color:var(--text)">Nano-Gym</div>
+  <div style="width:100%;max-width:280px">
+    <div style="font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:12px" id="overlay-status">Loading exercises...</div>
+    <div style="width:100%;height:6px;background:var(--bg-secondary);border-radius:3px;overflow:hidden;border:0.5px solid var(--border)">
+      <div id="overlay-bar" style="width:0%;height:100%;background:var(--brand);border-radius:3px;transition:width 0.3s ease"></div>
+    </div>
+  </div>
+  <div style="font-size:12px;color:var(--text-tertiary);text-align:center">Building your workout plan...</div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
